@@ -29,6 +29,7 @@ async def get_user_by_username(session, username):
 @connection
 async def get_user_by_id(session, user_id):
     user = await session.scalar(select(User).where(User.id == user_id))
+    return user if user else None
 
 @connection
 async def perform_transfer(session, sender_id, receiver_id, amount, commission):

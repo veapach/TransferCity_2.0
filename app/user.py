@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
@@ -44,7 +44,8 @@ async def get_receiver_id(message: Message, state: FSMContext):
     if receiver:
         await state.update_data(receiver_id=receiver.id)
         await state.set_state(Transfer.amount)
-        await message.answer(f'Сколько вы хотите перевести?\n(мин. - 10, макс. - 100)\n\nКомиссия - 5%\n\nВаш баланс - {user.balance}')
+        await message.answer(f'Перевод пользователю @{receiver.name}\nСколько вы хотите перевести?\n(мин. - 10, макс. - 100)\n\n'
+                             f'Комиссия - 5%\n\nВаш баланс - {user.balance}')
     else:
         await message.answer(f'Пользователь @{message.text} не найден, либо не зарегистрирован в нашей игре!\nПопробуйте еще раз',
                              reply_markup=kb.cancel)
@@ -55,21 +56,28 @@ async def get_transfer_amount(message: Message, state: FSMContext):
     data = await state.get_data()
     user = await get_user_by_username(message.from_user.username)
     receiver = await get_user_by_id(data['receiver_id'])
-    print(receiver.tg_id, receiver.name)
-    amount = Decimal(message.text)
-    if 10 <= amount <= 100 and amount <= user.balance:
-        await state.update_data(amount=amount)
-        await state.set_state(Transfer.confirm)
-        await message.answer(f'Вы собираетесь перевести пользователю @{receiver.name}\n{amount} points\n\n'
-                             f'Подтверждаете?', reply_markup=kb.transfer_accept)
-    else:
-        await message.answer('Вы ввели неверное значение\n(мин. - 10, макс. - 100)\n\nИли у вас недостаточно баланса'
-                             f'\n(Ваш баланс - {user.balance})\n\n'
-                             'попробуйте еще раз отправить сумму', reply_markup=kb.cancel)
+    user_input = message.text.replace(',', '.').strip()
+
+    try:
+        amount = Decimal(user_input).quantize(Decimal('0.01'))
+        if 10 <= amount <= 100 and amount <= user.balance:
+            await state.update_data(amount=amount)
+            await state.set_state(Transfer.confirm)
+            await message.answer(f'Вы собираетесь перевести пользователю @{receiver.name}\n{amount} points\n'
+                                 f'Итого с вашего баланса будет снято {(amount + (amount * Decimal('0.05'))):.2f} с комиссией 5%\n\n'
+                                 f'Подтверждаете?', reply_markup=kb.transfer_accept)
+        else:
+            await message.answer('Вы ввели неверное значение\n(мин. - 10, макс. - 100)\n\nИли у вас недостаточно баланса'
+                                 f'\n(Ваш баланс - {user.balance})\n\n'
+                                 'попробуйте еще раз отправить сумму', reply_markup=kb.cancel)
+            await state.set_state(Transfer.amount)
+    except InvalidOperation:
+        await message.answer('Неферный формат суммы. Пожалуйста, введите корректное число', reply_markup=kb.cancel)
         await state.set_state(Transfer.amount)
 
 @router.callback_query(F.data == 'transfer_accepted')
 async def transfer_accepted(callback: CallbackQuery, state: FSMContext):
+    await callback.answer(cache_time=1)
     data = await state.get_data()
     sender = await get_user_by_username(callback.from_user.username)
     receiver = await get_user_by_id(data['receiver_id'])
@@ -80,7 +88,7 @@ async def transfer_accepted(callback: CallbackQuery, state: FSMContext):
         return
 
     amount = data['amount']
-    commission = amount * 0.05
+    commission = amount * Decimal('0.05')
     total_deduction = amount + commission
     if sender.balance < total_deduction:
         await callback.message.answer('Недостаточно баланса для выполнения перевода с учетом комиссии')
@@ -90,7 +98,8 @@ async def transfer_accepted(callback: CallbackQuery, state: FSMContext):
     success = await perform_transfer(sender.id, receiver.id, amount, commission)
     if success:
         await callback.message.answer(
-            f'fПеревод успешно выполнен!\nВы перевели {amount} points @{receiver.id}.\nКомиссия: {commission} points'
+            f'Перевод успешно выполнен!\nВы перевели {amount:.2f} points пользователю @{receiver.name}.\nКомиссия: {commission:.2f} points'
+            f'\nВаш баланс - {(sender.balance - total_deduction):.2f}', reply_markup=kb.main
         )
     else:
         await callback.message.answer('Произошла ошибка при выполнении перевода. Попробуйте позже')
