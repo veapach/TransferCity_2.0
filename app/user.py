@@ -1,7 +1,7 @@
 import os.path
 from decimal import Decimal, InvalidOperation
 
-from aiogram import Router, F
+from aiogram import Router, F, Bot
 from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.filters import CommandStart
 
@@ -116,6 +116,13 @@ async def transfer_accepted(callback: CallbackQuery, state: FSMContext):
             f'💸 Вы перевели <b>{amount}</b> points пользователю @{receiver.username} 💸'
             f'\nКомиссия: <i>{commission:.2f}</i> points'
             f'\nВаш баланс - <b>{(sender.balance - total_deduction):.2f}</b>', reply_markup=kb.main
+        )
+        await callback.bot.send_message(
+            chat_id=receiver.tg_id,
+            text=(
+                f'🎉 Вам перевели <b>{amount - commission:.2f}</b> points от пользователя @{sender.username}'
+                f'\nВаш текущий баланс - <b>{receiver.balance + amount:.2f}</b>'
+            )
         )
     else:
         await callback.message.answer('🛑 Произошла ошибка при выполнении перевода. Попробуйте позже')
