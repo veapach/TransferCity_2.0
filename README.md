@@ -1,8 +1,12 @@
 # TransferBot
 MiniGame in Telegram Bot 
 
-Запуск - в корне проекта создать файл config.py, туда вписать
-
+**Запуск**
+1. В консоле зайти в папку с проектом
+2. `python -m venv .venv`
+3. `.venv\Scripts\activate`
+4. `pip install -r requirements.txt`
+5. В корне проекта создать файл config.py, туда вписать
 `TG_TOKEN = 'токен бота'`
 
 Идея:
