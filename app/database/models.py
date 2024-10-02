@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import ForeignKey, String, BigInteger, Integer, DateTime
+from sqlalchemy import ForeignKey, String, BigInteger, Integer, DateTime, Index
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
 from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine, AsyncSession
 from decimal import Decimal
@@ -21,13 +21,15 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     tg_id = mapped_column(BigInteger, unique=True, nullable=False)
-    name: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     balance: Mapped[Decimal] = mapped_column(DecimalType(), default=Decimal('100.00'))
-    rating_points: Mapped[int] = mapped_column(Integer, default=100)
+    rating_points: Mapped[int] = mapped_column(Integer, default=0)
     global_rank: Mapped[int] = mapped_column(Integer, default=0)
     last_daily_reward = mapped_column(DateTime, default=datetime.datetime.utcnow)
 
-    # TODO: Реферальная система, премиум подписка
+    __table_args__ = (
+        Index('idx_rating_points', 'rating_points'),
+    )
 
 
 class Transfer(Base):

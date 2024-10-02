@@ -2,9 +2,11 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMar
 
 
 main = ReplyKeyboardMarkup(keyboard=[
-    [KeyboardButton(text='Перевести points')],
-    [KeyboardButton(text='Баланс')],
-    [KeyboardButton(text='Место в рейтинге')]
+    [KeyboardButton(text='🔄 Перевести points'),
+    KeyboardButton(text='💰 Баланс')],
+    [KeyboardButton(text="🏅 Рейтинг"),
+     KeyboardButton(text='🔝 Топ-10')],
+    [KeyboardButton(text='📩 Связаться с поддержкой')]
 ], resize_keyboard=True, input_field_placeholder='Выберите действие')
 
 cancel = InlineKeyboardMarkup(inline_keyboard=[
@@ -12,6 +14,6 @@ cancel = InlineKeyboardMarkup(inline_keyboard=[
 ])
 
 transfer_accept = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='Да', callback_data='transfer_accepted')],
-    [InlineKeyboardButton(text='Нет', callback_data='transfer_declined')],
+    [InlineKeyboardButton(text='✅ Подтвердить', callback_data='transfer_accepted')],
+    [InlineKeyboardButton(text='❌ Отменить', callback_data='transfer_declined')],
 ])
